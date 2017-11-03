@@ -1,2 +1,4 @@
 Tutorial
 desktop.ini
+__pycache__
+MNIST_data
