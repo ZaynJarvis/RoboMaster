@@ -1,0 +1,45 @@
+import tensorflow as ts 
+import numpy as np 
+import model as M 
+from tensorflow.examples.tutorials.mnist import input_data
+import cv2 as cv 
+mnist = input_data.read_data_sets('MNIST_data',one_hot = True)
+
+def build_model(input_data):
+	mod = M.Model(input_data,[None,28*28])
+	mod.reshape([-1,28,28,1])
+	mod.convLayer(5,6,activation = M.PARAM_RELU)
+	mod.maxpoolLayer(2)
+	mod.convLayer(5,16,activation = M.PARAM_RELU)
+	mod.maxpoolLayer(2)
+	mod.flatten()
+	mod.fcLayer(100, activation = M.PARAM_RELU)
+	mod.fcLayer(10)
+	return mod.get_current_layer()
+
+
+def build_graph():
+	input_placeholder = tf.placeholder(tf.float32,[None,28*28])
+	lable_placeholder = tf.placeholder(tf.float32,[None,10])
+	output = build_model(input_placeholder)
+	loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(label = lable_placeholder, logit = output))
+	accuracy = M.accuracy(output,tf.argmax(lable_placeholder, 1))
+	train_step = tf.train.GrandientDescentOptimizer(0.1).minimize(loss)
+	return input_placeholder, lable_placeholder, output, loss , accuracy, train_step
+
+ITER = 1000
+input_placeholder, lable_placeholder, output, loss , accuracy, train_step = build_graph()
+
+with tf.Session() as S:
+	saver = tf.train.Saver()
+	M.loadSess('./model',S,init = True)
+	for i in range (ITER):
+		x_train, y_train = mnist.train.next_batch(128)
+		ls ,acc, _ = sess.run([loss,accuracy,train_step],feed_dict ={input_placeholder:x_train, label_placeholder:y_train})
+		if i % 100 == 0:
+			print('Iter : ',i,'\t| acc : ',acc,'\t| loss : ',ls)
+		if i % 1000 == 0:
+			acc = sess.run(accuracy,feed_dict={input_placeholder:mnist.test.images, label_placeholder:mnist.test.labels})
+			print('Test Accuracy : ', acc)
+
+	saver.save(sess, './model/digit.ckpt')
